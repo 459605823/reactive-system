@@ -28,24 +28,24 @@ const arrayInstrumentations: Record<string, Function> = {};
 const mutableInstrumentations: Record<string, Function> = {
   add(key: any) {
     // this为代理对象，通过raw获取原始对象
-    const target = (this as Record<string | symbol, any>).raw
-    const hadKey = target.has(key)
-    const res = target.add(key)
+    const target = (this as Record<string | symbol, any>).raw;
+    const hadKey = target.has(key);
+    const res = target.add(key);
     if (!hadKey) {
-      trigger(target, key, 'ADD')
+      trigger(target, key, 'ADD');
     }
-    return res
+    return res;
   },
   delete(key: any) {
-    const target = (this as Record<string | symbol, any>).raw
-    const hadKey = target.has(key)
-    const res = target.delete(key)
+    const target = (this as Record<string | symbol, any>).raw;
+    const hadKey = target.has(key);
+    const res = target.delete(key);
     if (hadKey) {
-      trigger(target, key, 'DELETE')
+      trigger(target, key, 'DELETE');
     }
-    return res
-  }
-}
+    return res;
+  },
+};
 
 function createReactive(
   obj: Record<string | symbol, any>,
@@ -61,8 +61,8 @@ function createReactive(
         return target;
       }
       if (key === 'size') {
-        track(target, state.ITERATE_KEY)
-        return Reflect.get(target, key, target)
+        track(target, state.ITERATE_KEY);
+        return Reflect.get(target, key, target);
       }
       // 重写数组方法
       if (
@@ -166,4 +166,61 @@ export function readonly(obj: Record<string | symbol, any>) {
 
 export function shallowReadonly(obj: Record<string | symbol, any>) {
   return createReactive(obj, true, true);
+}
+
+export function ref(val: any) {
+  const wrapper = {
+    value: val,
+  };
+  Object.defineProperty(wrapper, '__v_isRef', {
+    value: true,
+  });
+  return reactive(wrapper);
+}
+
+// 解决解构响应丢失问题
+export function toRef(obj: Record<string, any>, key: string) {
+  const wrapper = {
+    get value() {
+      return obj[key];
+    },
+    set value(val: any) {
+      obj[key] = val
+    }
+  };
+  Object.defineProperty(wrapper, '__v_isRef', {
+    value: true,
+  });
+  return wrapper;
+}
+
+export function toRefs(obj: Record<string, any>) {
+  const ret: Record<
+    string,
+    {
+      value: any;
+    }
+  > = {};
+  for (const key in obj) {
+    ret[key] = toRef(obj, key);
+  }
+  return proxyRefs(ret);
+}
+
+// 自动脱ref
+export function proxyRefs(target: Record<string, any>) {
+  return new Proxy(target, {
+    get(target, key, receiver) {
+      const value = Reflect.get(target, key, receiver)
+      return value.__v_isRef ? value.value : value
+    },
+    set(target, key, newVal, receiver) {
+      const value = target[key as string]
+      if (value.__v_isRef) {
+        value.value = newVal
+        return true
+      }
+      return Reflect.set(target, key, newVal, receiver)
+    }
+  })
 }

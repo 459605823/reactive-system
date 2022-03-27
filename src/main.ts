@@ -1,17 +1,15 @@
 import {effect} from './core/effect'
-import {reactive} from './core/reactive'
+import {ref, reactive, toRefs} from './core/reactive'
 
-const obj = [1]
-const arr = reactive(obj)
+const a = reactive({foo: 1, bar: 2})
+const b = toRefs(a)
 
 effect(() => {
-  for(let key of arr) {
-    console.log(key)
-  }
+  console.log(b.foo)
 })
 
 setTimeout(() => {
-  arr[1] = 2
+  b.foo = 3
 }, 2000)
 
 
