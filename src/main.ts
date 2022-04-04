@@ -1,5 +1,5 @@
-import {effect} from './core/effect'
-import {ref, reactive, toRefs} from './core/reactive'
+import {effect} from 'core/effect'
+import {ref, reactive, toRefs} from 'core/reactive'
 
 const a = reactive({foo: 1, bar: 2})
 const b = toRefs(a)
